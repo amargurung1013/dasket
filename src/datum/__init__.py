@@ -1,2 +1,3 @@
-def main() -> None:
-    print("Hello from datum!")
+from datum.dataset import Dataset
+
+__all__ = ["Dataset"]
