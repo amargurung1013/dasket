@@ -149,6 +149,30 @@ class Dataset:
         file_path.parent.mkdir(parents=True, exist_ok=True)
         exporter(file_path)
 
+    def select_columns(self, columns: list[str]) -> "Dataset":
+        missing_columns = set(columns) - set(self._data.columns)
+
+        if missing_columns:
+            raise ValueError(f"Columns not found: {sorted(missing_columns)}")
+
+        return Dataset(self._data.select(columns))
+
+    def drop_columns(self, columns: list[str]) -> "Dataset":
+        missing_columns = set(columns) - set(self._data.columns)
+
+        if missing_columns:
+            raise ValueError(f"Columns not found: {sorted(missing_columns)}")
+
+        return Dataset(self._data.drop(columns))
+
+    def rename_columns(self, mapping: dict[str, str]) -> "Dataset":
+        missing_columns = set(mapping) - set(self._data.columns)
+
+        if missing_columns:
+            raise ValueError(f"Columns not found: {sorted(missing_columns)}")
+
+        return Dataset(self._data.rename(mapping))
+
     @classmethod
     def from_dataframe(cls, dataframe: pl.DataFrame) -> "Dataset":
         return cls(dataframe)
