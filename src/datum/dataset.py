@@ -1,5 +1,6 @@
 import math
 import random
+from collections import defaultdict
 from pathlib import Path
 
 import polars as pl
@@ -199,6 +200,53 @@ class Dataset:
 
         train_indices = indices[:train_count]
         test_indices = indices[train_count:]
+
+        train_data = self._data[train_indices]
+        test_data = self._data[test_indices]
+
+        return Dataset(train_data), Dataset(test_data)
+
+    def stratified_split(
+        self,
+        column: str,
+        train_ratio: float = 0.8,
+        seed: int | None = None,
+    ) -> tuple["Dataset", "Dataset"]:
+        if not 0 < train_ratio < 1:
+            raise ValueError("train_ratio must be between 0 and 1")
+
+        if column not in self._data.columns:
+            raise ValueError(f"Column not found: {column}")
+
+        groups = defaultdict(list)
+
+        for index, value in enumerate(self._data[column].to_list()):
+            if value is None:
+                raise ValueError(f"Column '{column}' contains null values")
+
+            groups[value].append(index)
+
+        rng = random.Random(seed)
+        train_indices = []
+        test_indices = []
+
+        for value, indices in groups.items():
+            if len(indices) < 2:
+                raise ValueError(
+                    f"Every class must have at least 2 samples. "
+                    f"Class '{value}' has {len(indices)}."
+                )
+
+            rng.shuffle(indices)
+
+            train_count = math.floor(len(indices) * train_ratio)
+            train_count = max(1, min(train_count, len(indices) - 1))
+
+            train_indices.extend(indices[:train_count])
+            test_indices.extend(indices[train_count:])
+
+        rng.shuffle(train_indices)
+        rng.shuffle(test_indices)
 
         train_data = self._data[train_indices]
         test_data = self._data[test_indices]
