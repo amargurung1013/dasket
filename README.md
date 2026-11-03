@@ -173,9 +173,7 @@ profile = cleaned.profile()
 print(profile)
 
 # Filter records
-filtered = cleaned.filter(
-    pl.col("age") > 20
-)
+filtered = cleaned.filter(pl.col("age") > 20)
 
 # Split into training and testing datasets
 train, test = filtered.split(
@@ -331,9 +329,7 @@ duplicates = dataset.find_duplicates()
 Use specific columns:
 
 ```python
-duplicates = dataset.find_duplicates(
-    columns=["email"]
-)
+duplicates = dataset.find_duplicates(columns=["email"])
 ```
 
 If no columns are specified, all columns are used.
@@ -400,9 +396,7 @@ cleaned = dataset.drop_missing()
 Consider only selected columns:
 
 ```python
-cleaned = dataset.drop_missing(
-    columns=["email"]
-)
+cleaned = dataset.drop_missing(columns=["email"])
 ```
 
 An empty column selection is treated as a no-op.
@@ -464,9 +458,7 @@ The profile includes:
 Selects specific columns.
 
 ```python
-subset = dataset.select_columns(
-    ["name", "email"]
-)
+subset = dataset.select_columns(["name", "email"])
 ```
 
 Column order follows the supplied list.
@@ -478,9 +470,7 @@ At least one column must be selected.
 Removes selected columns.
 
 ```python
-reduced = dataset.drop_columns(
-    ["temporary_field", "internal_id"]
-)
+reduced = dataset.drop_columns(["temporary_field", "internal_id"])
 ```
 
 Datum rejects attempts to drop all columns.
@@ -515,26 +505,19 @@ Datum exposes Polars expression-based filtering through the Dataset abstraction.
 ```python
 import polars as pl
 
-adults = dataset.filter(
-    pl.col("age") >= 18
-)
+adults = dataset.filter(pl.col("age") >= 18)
 ```
 
 Multiple conditions:
 
 ```python
-filtered = dataset.filter(
-    (pl.col("age") >= 18)
-    & (pl.col("country") == "India")
-)
+filtered = dataset.filter((pl.col("age") >= 18) & (pl.col("country") == "India"))
 ```
 
 String filtering:
 
 ```python
-filtered = dataset.filter(
-    pl.col("email").str.ends_with("@gmail.com")
-)
+filtered = dataset.filter(pl.col("email").str.ends_with("@gmail.com"))
 ```
 
 Datum accepts Polars expressions rather than implementing a separate filtering language.
