@@ -1,3 +1,5 @@
+import math
+import random
 from pathlib import Path
 
 import polars as pl
@@ -180,6 +182,28 @@ class Dataset:
         filtered_data = self._data.filter(expression)
 
         return Dataset(filtered_data)
+
+    def split(
+        self,
+        train_ratio: float = 0.8,
+        seed: int | None = None,
+    ) -> tuple["Dataset", "Dataset"]:
+        if not 0 < train_ratio < 1:
+            raise ValueError("train_ratio must be between 0 and 1")
+
+        row_count = self.row_count
+        train_count = math.floor(row_count * train_ratio)
+
+        indices = list(range(row_count))
+        random.Random(seed).shuffle(indices)
+
+        train_indices = indices[:train_count]
+        test_indices = indices[train_count:]
+
+        train_data = self._data[train_indices]
+        test_data = self._data[test_indices]
+
+        return Dataset(train_data), Dataset(test_data)
 
     @classmethod
     def from_dataframe(cls, dataframe: pl.DataFrame) -> "Dataset":
