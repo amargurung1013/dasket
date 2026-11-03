@@ -77,6 +77,22 @@ class Dataset:
             column: self._data[column].null_count() for column in self._data.columns
         }
 
+    def drop_missing(
+        self,
+        columns: list[str] | None = None,
+    ) -> "Dataset":
+        if columns is None:
+            columns = self._data.columns
+
+        missing_columns = set(columns) - set(self._data.columns)
+
+        if missing_columns:
+            raise ValueError(f"Columns not found: {sorted(missing_columns)}")
+
+        cleaned_data = self._data.drop_nulls(subset=columns)
+
+        return Dataset(cleaned_data)
+
     @classmethod
     def from_file(cls, path: str | Path) -> "Dataset":
         file_path = Path(path)
