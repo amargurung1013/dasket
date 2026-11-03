@@ -116,6 +116,20 @@ class Dataset:
 
         return cls(loader(file_path))
 
+    def profile(self) -> dict:
+        return {
+            "row_count": self.row_count,
+            "column_count": len(self.columns),
+            "columns": {
+                column: {
+                    "dtype": str(self._data.schema[column]),
+                    "null_count": self._data[column].null_count(),
+                }
+                for column in self.columns
+            },
+            "duplicate_count": self._data.is_duplicated().sum(),
+        }
+
     @classmethod
     def from_dataframe(cls, dataframe: pl.DataFrame) -> "Dataset":
         return cls(dataframe)
