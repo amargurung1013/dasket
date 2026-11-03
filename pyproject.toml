@@ -1,8 +1,9 @@
 [project]
-name = "datum"
+name = "dasket"
 version = "0.1.0"
 description = "A composable Python library for preparing and assessing datasets for AI workflows."
 readme = "README.md"
+license = "MIT"
 authors = [
     { name = "amar", email = "amargurung1013@gmail.com" }
 ]

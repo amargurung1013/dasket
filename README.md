@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/assets/datum.png" alt="Datum logo" width="520">
+<img src="docs/assets/dasket.png" alt="Dasket logo" width="520">
 
 ### Prepare and assess datasets for AI workflows.
 
@@ -12,20 +12,20 @@ A composable Python library for dataset ingestion, validation, transformation, p
 
 ## Overview
 
-**Datum** is a Python library designed to simplify the process of preparing and assessing datasets before they enter AI and machine learning workflows.
+**Dasket** is a Python library designed to simplify the process of preparing and assessing datasets before they enter AI and machine learning workflows.
 
 Working with raw data often involves repetitive operations: inspecting schemas, handling missing values, normalizing text, detecting duplicates, validating records, and preparing reproducible dataset partitions.
 
-Datum provides a consistent interface for these operations while leveraging established data-processing libraries rather than reinventing their underlying functionality.
+Dasket provides a consistent interface for these operations while leveraging established data-processing libraries rather than reinventing their underlying functionality.
 
-Built on **Polars**, **Pydantic**, and **PyArrow**, Datum focuses on composability, predictable behavior, and explicit data transformations.
+Built on **Polars**, **Pydantic**, and **PyArrow**, Dasket focuses on composability, predictable behavior, and explicit data transformations.
 
 ### Design principles
 
 - **Composability:** Dataset operations return Dataset instances, allowing transformations to be chained or combined.
 - **Explicit validation:** Invalid inputs should produce meaningful errors rather than unexpected behavior.
 - **Reproducibility:** Randomized dataset splitting supports deterministic seeds.
-- **Separation of concerns:** Datum provides a higher-level dataset interface while delegating dataframe operations to Polars.
+- **Separation of concerns:** Dasket provides a higher-level dataset interface while delegating dataframe operations to Polars.
 - **Minimal abstraction:** Avoid unnecessary frameworks and hide as little of the underlying data-processing behavior as possible.
 
 ---
@@ -50,14 +50,14 @@ Built on **Polars**, **Pydantic**, and **PyArrow**, Datum focuses on composabili
 
 ## Architecture
 
-Datum uses a small wrapper abstraction around Polars DataFrames.
+Dasket uses a small wrapper abstraction around Polars DataFrames.
 
 ```text
                     Application
                          |
                          v
                  +---------------+
-                 |     Datum     |
+                 |     Dasket     |
                  |               |
                  |    Dataset    |
                  +---------------+
@@ -93,7 +93,7 @@ Datum uses a small wrapper abstraction around Polars DataFrames.
 | Ruff | Formatting and linting |
 | uv | Dependency and environment management |
 
-Datum deliberately delegates dataframe execution and storage-format handling to established libraries.
+Dasket deliberately delegates dataframe execution and storage-format handling to established libraries.
 
 ---
 
@@ -110,7 +110,7 @@ Clone the repository:
 
 ```bash
 git clone <repository-url>
-cd datum
+cd dasket
 ```
 
 Install dependencies:
@@ -128,7 +128,7 @@ source .venv/bin/activate
 Verify the installation:
 
 ```bash
-uv run python -c "from datum import Dataset; print(Dataset)"
+uv run python -c "from dasket import Dataset; print(Dataset)"
 ```
 
 ---
@@ -138,7 +138,7 @@ uv run python -c "from datum import Dataset; print(Dataset)"
 ```python
 import polars as pl
 
-from datum import Dataset
+from dasket import Dataset
 
 # Create a dataset
 df = pl.DataFrame(
@@ -190,14 +190,14 @@ Every transformation returns a new `Dataset` instance. The original dataset rema
 
 ### 1. Dataset Construction
 
-Datum supports construction from an existing Polars DataFrame or a supported file format.
+Dasket supports construction from an existing Polars DataFrame or a supported file format.
 
 #### `Dataset.from_dataframe()`
 
 ```python
 import polars as pl
 
-from datum import Dataset
+from dasket import Dataset
 
 df = pl.DataFrame(
     {
@@ -248,12 +248,12 @@ dataset.row_count
 
 ### 2. Schema Validation
 
-Datum integrates with Pydantic to validate dataset records against Python models.
+Dasket integrates with Pydantic to validate dataset records against Python models.
 
 ```python
 from pydantic import BaseModel
 
-from datum import Dataset
+from dasket import Dataset
 
 
 class User(BaseModel):
@@ -269,7 +269,7 @@ report = dataset.validate(User)
 print(report)
 ```
 
-Validation is delegated to Datum's validation module, which uses the supplied Pydantic model as the record schema.
+Validation is delegated to Dasket's validation module, which uses the supplied Pydantic model as the record schema.
 
 This allows application developers to define their own validation requirements rather than relying on a fixed collection of predefined schemas.
 
@@ -473,7 +473,7 @@ Removes selected columns.
 reduced = dataset.drop_columns(["temporary_field", "internal_id"])
 ```
 
-Datum rejects attempts to drop all columns.
+Dasket rejects attempts to drop all columns.
 
 #### `rename_columns(mapping)`
 
@@ -500,7 +500,7 @@ The operation validates that:
 
 #### `filter(expression)`
 
-Datum exposes Polars expression-based filtering through the Dataset abstraction.
+Dasket exposes Polars expression-based filtering through the Dataset abstraction.
 
 ```python
 import polars as pl
@@ -520,7 +520,7 @@ String filtering:
 filtered = dataset.filter(pl.col("email").str.ends_with("@gmail.com"))
 ```
 
-Datum accepts Polars expressions rather than implementing a separate filtering language.
+Dasket accepts Polars expressions rather than implementing a separate filtering language.
 
 Invalid expression types raise `TypeError`. Column resolution and expression execution are handled by Polars.
 
@@ -637,7 +637,7 @@ Unsupported extensions raise `ValueError`.
 
 ## Testing
 
-Datum uses pytest for automated testing and Ruff for formatting and linting.
+Dasket uses pytest for automated testing and Ruff for formatting and linting.
 
 Run the complete test suite:
 
@@ -670,10 +670,10 @@ The `make check` target executes formatting, linting, and automated tests.
 ## Project Structure
 
 ```text
-datum/
+dasket/
 │
 ├── src/
-│   └── datum/
+│   └── dasket/
 │       ├── __init__.py
 │       ├── dataset.py
 │       ├── reports.py
@@ -693,7 +693,7 @@ datum/
 │
 ├── docs/
 │   └── assets/
-│       └── datum.png
+│       └── dasket.png
 │
 ├── Makefile
 ├── pyproject.toml
@@ -705,7 +705,7 @@ datum/
 
 ## Design Scope
 
-Datum is intended to provide practical dataset preparation and assessment primitives.
+Dasket is intended to provide practical dataset preparation and assessment primitives.
 
 It is not intended to replace:
 
@@ -715,7 +715,7 @@ It is not intended to replace:
 - Dedicated machine learning frameworks.
 - Distributed data-processing engines.
 
-Instead, Datum provides a consistent interface that combines common dataset preparation operations into one composable API.
+Instead, Dasket provides a consistent interface that combines common dataset preparation operations into one composable API.
 
 ---
 
@@ -743,7 +743,7 @@ For development:
 
 ```bash
 git clone <repository-url>
-cd datum
+cd dasket
 
 uv sync
 

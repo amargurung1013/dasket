@@ -1,7 +1,7 @@
 import polars as pl
 from pydantic import BaseModel, Field
 
-from datum import Dataset
+from dasket import Dataset
 
 
 class CodingTask(BaseModel):

@@ -1,7 +1,7 @@
 import polars as pl
 import pytest
 
-from datum import Dataset
+from dasket import Dataset
 
 
 def test_find_exact_duplicate_rows():

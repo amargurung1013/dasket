@@ -1,6 +1,6 @@
 import polars as pl
 
-from datum import Dataset
+from dasket import Dataset
 
 
 def test_drop_missing_removes_rows_with_nulls():

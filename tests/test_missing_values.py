@@ -1,6 +1,6 @@
 import polars as pl
 
-from datum import Dataset
+from dasket import Dataset
 
 
 def test_missing_values_counts_nulls_per_column():

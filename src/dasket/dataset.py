@@ -7,8 +7,8 @@ from typing import Any
 import polars as pl
 from pydantic import BaseModel
 
-from datum.reports import ValidationReport
-from datum.validation import validate_records
+from dasket.reports import ValidationReport
+from dasket.validation import validate_records
 
 
 class Dataset:
