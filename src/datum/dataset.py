@@ -173,6 +173,14 @@ class Dataset:
 
         return Dataset(self._data.rename(mapping))
 
+    def filter(self, expression: pl.Expr) -> "Dataset":
+        if not isinstance(expression, pl.Expr):
+            raise TypeError("expression must be a Polars Expr")
+
+        filtered_data = self._data.filter(expression)
+
+        return Dataset(filtered_data)
+
     @classmethod
     def from_dataframe(cls, dataframe: pl.DataFrame) -> "Dataset":
         return cls(dataframe)
