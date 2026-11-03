@@ -1,6 +1,10 @@
 from pathlib import Path
 
 import polars as pl
+from pydantic import BaseModel
+
+from datum.reports import ValidationReport
+from datum.validation import validate_records
 
 
 class Dataset:
@@ -9,6 +13,11 @@ class Dataset:
             raise TypeError("data must be a Polars DataFrame")
 
         self._data = data
+
+    def validate(self, schema: type[BaseModel]) -> ValidationReport:
+        result = validate_records(self._data, schema)
+
+        return ValidationReport(**result)
 
     @classmethod
     def from_file(cls, path: str | Path) -> "Dataset":
