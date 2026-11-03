@@ -19,6 +19,43 @@ class Dataset:
 
         return ValidationReport(**result)
 
+    def normalize(
+        self,
+        columns: list[str],
+        lowercase: list[str] | None = None,
+    ) -> "Dataset":
+        lowercase = lowercase or []
+
+        missing_columns = set(columns) - set(self._data.columns)
+
+        if missing_columns:
+            raise ValueError(f"Columns not found: {sorted(missing_columns)}")
+
+        invalid_lowercase = set(lowercase) - set(columns)
+
+        if invalid_lowercase:
+            raise ValueError(
+                "Columns in lowercase must also be in columns: "
+                f"{sorted(invalid_lowercase)}"
+            )
+
+        expressions = []
+
+        for column in columns:
+            if self._data.schema[column] != pl.String:
+                raise TypeError(f"Column '{column}' must have String dtype")
+
+            expression = pl.col(column).str.strip_chars()
+
+            if column in lowercase:
+                expression = expression.str.to_lowercase()
+
+            expressions.append(expression.alias(column))
+
+        normalized_data = self._data.with_columns(expressions)
+
+        return Dataset(normalized_data)
+
     @classmethod
     def from_file(cls, path: str | Path) -> "Dataset":
         file_path = Path(path)
