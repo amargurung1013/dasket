@@ -225,8 +225,13 @@ class Dataset:
         train_ratio: float = 0.8,
         seed: int | None = None,
     ) -> tuple["Dataset", "Dataset"]:
-        if not 0 < train_ratio < 1:
-            raise ValueError("train_ratio must be between 0 and 1")
+        if (
+            isinstance(train_ratio, bool)
+            or not isinstance(train_ratio, (int, float))
+            or not math.isfinite(train_ratio)
+            or not 0 < train_ratio < 1
+        ):
+            raise ValueError("train_ratio must be a finite number between 0 and 1")
 
         if column not in self._data.columns:
             raise ValueError(f"Column not found: {column}")
@@ -236,6 +241,17 @@ class Dataset:
         for index, value in enumerate(self._data[column].to_list()):
             if value is None:
                 raise ValueError(f"Column '{column}' contains null values")
+
+            if isinstance(value, float) and math.isnan(value):
+                raise ValueError(f"Column '{column}' contains NaN values")
+
+            try:
+                hash(value)
+            except TypeError as error:
+                raise TypeError(
+                    f"Column '{column}' must contain hashable scalar values "
+                    "for stratified splitting"
+                ) from error
 
             groups[value].append(index)
 
@@ -261,10 +277,10 @@ class Dataset:
         rng.shuffle(train_indices)
         rng.shuffle(test_indices)
 
-        train_data = self._data[train_indices]
-        test_data = self._data[test_indices]
-
-        return Dataset(train_data), Dataset(test_data)
+        return (
+            Dataset(self._data[train_indices]),
+            Dataset(self._data[test_indices]),
+        )
 
     @classmethod
     def from_dataframe(cls, dataframe: pl.DataFrame) -> "Dataset":
