@@ -72,6 +72,11 @@ class Dataset:
             subset=columns, keep="first"
         )
 
+    def missing_values(self) -> dict[str, int]:
+        return {
+            column: self._data[column].null_count() for column in self._data.columns
+        }
+
     @classmethod
     def from_file(cls, path: str | Path) -> "Dataset":
         file_path = Path(path)
