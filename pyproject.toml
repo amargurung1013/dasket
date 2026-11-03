@@ -1,7 +1,7 @@
 [project]
 name = "datum"
 version = "0.1.0"
-description = "Add your description here"
+description = "A composable Python library for preparing and assessing datasets for AI workflows."
 readme = "README.md"
 authors = [
     { name = "amar", email = "amargurung1013@gmail.com" }
@@ -12,9 +12,6 @@ dependencies = [
     "pyarrow>=26.0.1",
     "pydantic>=2.14.2",
 ]
-
-[project.scripts]
-datum = "datum:main"
 
 [build-system]
 requires = ["uv_build>=0.13.7,<0.14.0"]
