@@ -189,11 +189,24 @@ class Dataset:
         train_ratio: float = 0.8,
         seed: int | None = None,
     ) -> tuple["Dataset", "Dataset"]:
-        if not 0 < train_ratio < 1:
-            raise ValueError("train_ratio must be between 0 and 1")
+        if (
+            isinstance(train_ratio, bool)
+            or not isinstance(train_ratio, (int, float))
+            or not math.isfinite(train_ratio)
+            or not 0 < train_ratio < 1
+        ):
+            raise ValueError("train_ratio must be a finite number between 0 and 1")
 
         row_count = self.row_count
+
+        if row_count == 0:
+            return Dataset(self._data.clone()), Dataset(self._data.clone())
+
+        if row_count == 1:
+            raise ValueError("At least 2 rows are required to split a dataset")
+
         train_count = math.floor(row_count * train_ratio)
+        train_count = max(1, min(train_count, row_count - 1))
 
         indices = list(range(row_count))
         random.Random(seed).shuffle(indices)
@@ -201,10 +214,10 @@ class Dataset:
         train_indices = indices[:train_count]
         test_indices = indices[train_count:]
 
-        train_data = self._data[train_indices]
-        test_data = self._data[test_indices]
-
-        return Dataset(train_data), Dataset(test_data)
+        return (
+            Dataset(self._data[train_indices]),
+            Dataset(self._data[test_indices]),
+        )
 
     def stratified_split(
         self,
