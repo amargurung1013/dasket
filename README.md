@@ -9,26 +9,113 @@ A composable Python library for dataset ingestion, validation, transformation, p
 </div>
 
 ---
+# Dasket
 
-## Overview
+### Dataset preparation and assessment for AI workflows.
 
-**Dasket** is a Python library designed to simplify the process of preparing and assessing datasets before they enter AI and machine learning workflows.
+Dasket is a composable Python library for preparing, validating, transforming, and assessing datasets before they enter machine learning workflows.
 
-Working with raw data often involves repetitive operations: inspecting schemas, handling missing values, normalizing text, detecting duplicates, validating records, and preparing reproducible dataset partitions.
+Built on **Polars, Pydantic, and PyArrow**, Dasket provides a consistent interface for common dataset engineering operations without reinventing existing data-processing infrastructure.
 
-Dasket provides a consistent interface for these operations while leveraging established data-processing libraries rather than reinventing their underlying functionality.
-
-Built on **Polars**, **Pydantic**, and **PyArrow**, Dasket focuses on composability, predictable behavior, and explicit data transformations.
-
-### Design principles
-
-- **Composability:** Dataset operations return Dataset instances, allowing transformations to be chained or combined.
-- **Explicit validation:** Invalid inputs should produce meaningful errors rather than unexpected behavior.
-- **Reproducibility:** Randomized dataset splitting supports deterministic seeds.
-- **Separation of concerns:** Dasket provides a higher-level dataset interface while delegating dataframe operations to Polars.
-- **Minimal abstraction:** Avoid unnecessary frameworks and hide as little of the underlying data-processing behavior as possible.
+- Load datasets from CSV, JSON, JSONL, and Parquet.
+- Validate records using Pydantic schemas.
+- Normalize text and handle missing values.
+- Detect duplicate records.
+- Profile datasets and inspect their structure.
+- Create reproducible train/test splits.
 
 ---
+
+## Installation
+
+Requires Python 3.12 or later.
+
+```bash
+pip install dasket
+```
+
+Alternatively, using [uv](https://docs.astral.sh/uv/):
+
+```bash
+uv add dasket
+```
+
+## Quick Start
+
+Create a dataset from a Polars DataFrame and start preparing it.
+
+```python
+import polars as pl
+from dasket import Dataset
+
+# Create a DataFrame
+df = pl.DataFrame({
+    "name": [" Amar ", "SAM", "Alex", "Amar"],
+    "age": [21, 24, None, 21],
+    "email": [
+        "AMAR@example.com",
+        "sam@example.com",
+        "alex@example.com",
+        "AMAR@example.com",
+    ],
+})
+
+# Create a Dataset
+dataset = Dataset.from_dataframe(df)
+
+# Inspect the dataset
+print(dataset.shape)
+print(dataset.profile())
+
+# Normalize text
+dataset = dataset.normalize(
+    columns=["name", "email"],
+    lowercase=["email"],
+)
+
+# Inspect missing values
+print(dataset.missing_values())
+
+# Remove rows containing null values
+dataset = dataset.drop_missing()
+
+# Detect duplicate records
+duplicates = dataset.find_duplicates(
+    columns=["email"]
+)
+
+# Split into training and testing datasets
+train, test = dataset.split(
+    train_ratio=0.8,
+    seed=42,
+)
+
+# Export datasets
+train.to_file("train.parquet")
+test.to_file("test.parquet")
+```
+
+Every transformation returns a new `Dataset` instance. The original dataset remains unchanged.
+
+---
+
+## Why Dasket?
+
+Preparing data for machine learning involves more than loading files into a DataFrame.
+
+Developers frequently need to perform repetitive operations before a dataset is ready for a training pipeline:
+
+- Inspecting schemas and column types.
+- Identifying missing values.
+- Normalizing inconsistent text.
+- Detecting duplicate records.
+- Validating records against expected schemas.
+- Understanding dataset structure.
+- Preparing reproducible training and testing partitions.
+
+Dasket brings these operations together through a consistent, composable API.
+
+Rather than implementing its own DataFrame engine, Dasket builds on established libraries and focuses on providing a higher-level dataset interface.
 
 ## Features
 
@@ -38,8 +125,8 @@ Built on **Polars**, **Pydantic**, and **PyArrow**, Dasket focuses on composabil
 | Data export | CSV, JSON, JSONL, Parquet |
 | Schema validation | Pydantic model-based validation |
 | Text processing | Whitespace normalization, lowercase conversion |
-| Duplicate detection | Duplicate identification by selected columns |
 | Missing values | Null-value analysis and row removal |
+| Duplicate detection | Duplicate identification by selected columns |
 | Dataset profiling | Dimensions, column types, null counts, duplicate counts |
 | Column operations | Selection, removal, renaming |
 | Filtering | Polars expression-based filtering |
@@ -48,187 +135,46 @@ Built on **Polars**, **Pydantic**, and **PyArrow**, Dasket focuses on composabil
 
 ---
 
-## Architecture
-
-Dasket uses a small wrapper abstraction around Polars DataFrames.
-
-```text
-                    Application
-                         |
-                         v
-                 +---------------+
-                 |     Dasket     |
-                 |               |
-                 |    Dataset    |
-                 +---------------+
-                         |
-             +-----------+-----------+
-             |           |           |
-             v           v           v
-        Ingestion   Transformations  Profiling
-             |           |           |
-             +-----------+-----------+
-                         |
-                         v
-                  Polars DataFrame
-                         |
-              +----------+----------+
-              |                     |
-              v                     v
-          Validation             Storage
-              |                     |
-              v                     v
-           Pydantic              PyArrow
-```
-
-### Technology stack
-
-| Technology | Responsibility |
-|---|---|
-| Python 3.12+ | Core implementation |
-| Polars | Dataframe operations and transformations |
-| Pydantic | Schema validation |
-| PyArrow | Columnar data interoperability |
-| pytest | Automated testing |
-| Ruff | Formatting and linting |
-| uv | Dependency and environment management |
-
-Dasket deliberately delegates dataframe execution and storage-format handling to established libraries.
-
----
-
-## Installation
-
-### Requirements
-
-- Python >= 3.12
-- uv (recommended)
-
-### Development installation
-
-Clone the repository:
-
-```bash
-git clone <repository-url>
-cd dasket
-```
-
-Install dependencies:
-
-```bash
-uv sync
-```
-
-Activate the virtual environment:
-
-```bash
-source .venv/bin/activate
-```
-
-Verify the installation:
-
-```bash
-uv run python -c "from dasket import Dataset; print(Dataset)"
-```
-
----
-
-## Quick Start
-
-```python
-import polars as pl
-
-from dasket import Dataset
-
-# Create a dataset
-df = pl.DataFrame(
-    {
-        "name": [" Amar ", "SAM", "Alex", "Amar"],
-        "age": [21, 24, None, 21],
-        "language": ["Python", "Go", "Rust", "Python"],
-    }
-)
-
-dataset = Dataset.from_dataframe(df)
-
-# Inspect dataset dimensions
-print(dataset.shape)
-print(dataset.columns)
-print(dataset.row_count)
-
-# Normalize text
-normalized = dataset.normalize(
-    columns=["name", "language"],
-    lowercase=["name", "language"],
-)
-
-# Inspect missing values
-print(normalized.missing_values())
-
-# Remove rows containing null values
-cleaned = normalized.drop_missing()
-
-# Generate a dataset profile
-profile = cleaned.profile()
-print(profile)
-
-# Filter records
-filtered = cleaned.filter(pl.col("age") > 20)
-
-# Split into training and testing datasets
-train, test = filtered.split(
-    train_ratio=0.8,
-    seed=42,
-)
-```
-
-Every transformation returns a new `Dataset` instance. The original dataset remains unchanged.
-
----
-
-## API Reference
+## Core API
 
 ### 1. Dataset Construction
 
-Dasket supports construction from an existing Polars DataFrame or a supported file format.
-
-#### `Dataset.from_dataframe()`
+Create a dataset from an existing Polars DataFrame:
 
 ```python
 import polars as pl
-
 from dasket import Dataset
 
-df = pl.DataFrame(
-    {
-        "id": [1, 2, 3],
-        "name": ["Amar", "Sam", "Alex"],
-    }
-)
+df = pl.DataFrame({
+    "id": [1, 2, 3],
+    "name": ["Amar", "Sam", "Alex"],
+})
 
 dataset = Dataset.from_dataframe(df)
 ```
 
-#### `Dataset.from_file()`
+Alternatively, load a supported file directly:
 
 ```python
-dataset = Dataset.from_file("data.csv")
+dataset = Dataset.from_file("customers.csv")
 ```
 
-Supported extensions:
+Supported formats:
 
-| Extension | Polars reader |
+| Extension | Format |
 |---|---|
-| `.csv` | `pl.read_csv` |
-| `.json` | `pl.read_json` |
-| `.jsonl` | `pl.read_ndjson` |
-| `.parquet` | `pl.read_parquet` |
+| `.csv` | CSV |
+| `.json` | JSON |
+| `.jsonl` | JSON Lines |
+| `.parquet` | Parquet |
 
 File extensions are matched case-insensitively.
 
 Unsupported formats raise `ValueError`. Missing files and non-file paths raise `FileNotFoundError`.
 
-#### Dataset properties
+### 2. Dataset Properties
+
+Access basic dataset information:
 
 ```python
 dataset.data
@@ -244,23 +190,18 @@ dataset.row_count
 | `columns` | List of column names |
 | `row_count` | Number of rows |
 
----
-
-### 2. Schema Validation
+### 3. Schema Validation
 
 Dasket integrates with Pydantic to validate dataset records against Python models.
 
 ```python
 from pydantic import BaseModel
-
 from dasket import Dataset
-
 
 class User(BaseModel):
     name: str
     age: int
     email: str
-
 
 dataset = Dataset.from_file("users.json")
 
@@ -269,17 +210,11 @@ report = dataset.validate(User)
 print(report)
 ```
 
-Validation is delegated to Dasket's validation module, which uses the supplied Pydantic model as the record schema.
+Developers define their own validation requirements through Pydantic models rather than relying on predefined schemas.
 
-This allows application developers to define their own validation requirements rather than relying on a fixed collection of predefined schemas.
+### 4. Text Normalization
 
----
-
-### 3. Text Normalization
-
-#### `normalize(columns, lowercase=None)`
-
-Normalizes selected string columns by stripping surrounding whitespace and optionally converting values to lowercase.
+Normalize selected string columns:
 
 ```python
 normalized = dataset.normalize(
@@ -288,7 +223,7 @@ normalized = dataset.normalize(
 )
 ```
 
-Behavior:
+Behaviour:
 
 - Removes surrounding whitespace.
 - Supports optional lowercase conversion.
@@ -298,72 +233,9 @@ Behavior:
 - Requires lowercase columns to be included in the selected columns.
 - Does not modify the original dataset.
 
-Example:
-
-```text
-Before:
-
-"  AMAR  "
-"  Sam  "
-"  ALEX  "
-
-After:
-
-"amar"
-"Sam"
-"ALEX"
-```
-
----
-
-### 4. Duplicate Detection
-
-#### `find_duplicates(columns=None)`
-
-Identifies duplicate records based on selected columns.
-
-```python
-duplicates = dataset.find_duplicates()
-```
-
-Use specific columns:
-
-```python
-duplicates = dataset.find_duplicates(columns=["email"])
-```
-
-If no columns are specified, all columns are used.
-
-**Return semantics:** The method returns one representative row for each duplicate group, retaining the first occurrence and preserving group order.
-
-Example:
-
-```text
-Original:
-
-id    name
-1     Amar
-1     Amar
-2     Sam
-2     Sam
-3     Alex
-
-Result:
-
-id    name
-1     Amar
-2     Sam
-```
-
-This method does not return every occurrence belonging to a duplicate group.
-
----
-
 ### 5. Missing-Value Analysis
 
-#### `missing_values()`
-
-Returns the number of null values in each column.
+Inspect the number of null values in each column:
 
 ```python
 missing = dataset.missing_values()
@@ -371,43 +243,47 @@ missing = dataset.missing_values()
 print(missing)
 ```
 
-Example:
+Remove rows containing null values:
 
 ```python
-{
-    "name": 0,
-    "age": 3,
-    "email": 2,
-}
-```
-
-The operation counts actual null values, not empty strings or whitespace-only strings.
-
-#### `drop_missing(columns=None)`
-
-Removes rows containing null values.
-
-Remove rows with nulls in any column:
-
-```python
+# Remove rows with nulls in any column
 cleaned = dataset.drop_missing()
-```
 
-Consider only selected columns:
-
-```python
-cleaned = dataset.drop_missing(columns=["email"])
+# Consider only selected columns
+cleaned = dataset.drop_missing(
+    columns=["email"]
+)
 ```
 
 An empty column selection is treated as a no-op.
 
----
+**Note:** Missing-value analysis counts actual null values, not empty strings or whitespace-only strings.
 
-### 6. Dataset Profiling
+### 6. Duplicate Detection
 
-#### `profile()`
+Identify duplicate records:
 
-Generates a structural summary of the dataset.
+```python
+duplicates = dataset.find_duplicates()
+```
+
+Specify columns to identify duplicates based on selected fields:
+
+```python
+duplicates = dataset.find_duplicates(
+    columns=["email"]
+)
+```
+
+If no columns are specified, all columns are used.
+
+The method returns one representative row for each duplicate group, retaining the first occurrence and preserving group order.
+
+It does not return every occurrence belonging to a duplicate group.
+
+### 7. Dataset Profiling
+
+Generate a structural summary:
 
 ```python
 report = dataset.profile()
@@ -447,90 +323,80 @@ The profile includes:
 - Null count per column.
 - Duplicate row count.
 
-**Important:** `duplicate_count` counts all rows belonging to duplicate groups, not the number of duplicate groups or only the additional occurrences.
+**Note:** `duplicate_count` counts all rows belonging to duplicate groups, not the number of duplicate groups or only the additional occurrences.
 
----
+### 8. Column Operations
 
-### 7. Column Operations
-
-#### `select_columns(columns)`
-
-Selects specific columns.
+Select specific columns:
 
 ```python
-subset = dataset.select_columns(["name", "email"])
-```
-
-Column order follows the supplied list.
-
-At least one column must be selected.
-
-#### `drop_columns(columns)`
-
-Removes selected columns.
-
-```python
-reduced = dataset.drop_columns(["temporary_field", "internal_id"])
-```
-
-Dasket rejects attempts to drop all columns.
-
-#### `rename_columns(mapping)`
-
-Renames columns using a mapping.
-
-```python
-renamed = dataset.rename_columns(
-    {
-        "user_name": "name",
-        "user_email": "email",
-    }
+subset = dataset.select_columns(
+    ["name", "email"]
 )
 ```
 
-The operation validates that:
+Remove columns:
 
-- Original column names exist.
-- New names are non-empty strings.
-- Renaming does not create duplicate column names.
+```python
+reduced = dataset.drop_columns(
+    ["temporary_field", "internal_id"]
+)
+```
 
----
+Rename columns:
 
-### 8. Expression-Based Filtering
+```python
+renamed = dataset.rename_columns({
+    "user_name": "name",
+    "user_email": "email",
+})
+```
 
-#### `filter(expression)`
+Dasket validates column names and prevents renaming operations that would create duplicate column names.
 
-Dasket exposes Polars expression-based filtering through the Dataset abstraction.
+Additional constraints:
+
+- Column selection must contain at least one column.
+- Dropping all columns is rejected.
+- Original column names must exist.
+- New names must be non-empty strings.
+
+### 9. Expression-Based Filtering
+
+Dasket exposes Polars expression-based filtering through its Dataset abstraction.
 
 ```python
 import polars as pl
 
-adults = dataset.filter(pl.col("age") >= 18)
+adults = dataset.filter(
+    pl.col("age") >= 18
+)
 ```
 
 Multiple conditions:
 
 ```python
-filtered = dataset.filter((pl.col("age") >= 18) & (pl.col("country") == "India"))
+filtered = dataset.filter(
+    (pl.col("age") >= 18)
+    & (pl.col("country") == "India")
+)
 ```
 
 String filtering:
 
 ```python
-filtered = dataset.filter(pl.col("email").str.ends_with("@gmail.com"))
+filtered = dataset.filter(
+    pl.col("email").str.ends_with("@gmail.com")
+)
 ```
 
-Dasket accepts Polars expressions rather than implementing a separate filtering language.
+Dasket accepts native Polars expressions rather than implementing a separate filtering language.
 
 Invalid expression types raise `TypeError`. Column resolution and expression execution are handled by Polars.
 
----
+### 10. Dataset Splitting
 
-### 9. Dataset Splitting
-
-#### `split(train_ratio=0.8, seed=None)`
-
-Splits a dataset into training and testing partitions.
+Split a dataset into training and testing partitions:
 
 ```python
 train, test = dataset.split(
@@ -539,7 +405,7 @@ train, test = dataset.split(
 )
 ```
 
-The split:
+The operation:
 
 - Randomly shuffles row indices.
 - Uses the supplied ratio to determine the training partition size.
@@ -551,13 +417,9 @@ For datasets containing at least two rows, both partitions contain at least one 
 
 An empty dataset produces two empty partitions. A one-row dataset raises `ValueError`.
 
----
+### 11. Stratified Dataset Splitting
 
-### 10. Stratified Dataset Splitting
-
-#### `stratified_split(column, train_ratio=0.8, seed=None)`
-
-Performs a train/test split while preserving class representation across partitions.
+Perform a train/test split while preserving class representation:
 
 ```python
 train, test = dataset.stratified_split(
@@ -567,23 +429,23 @@ train, test = dataset.stratified_split(
 )
 ```
 
-For example:
+For example, a dataset containing:
 
 ```text
-Original distribution:
-
 Class A: 100
 Class B: 100
 Class C: 100
+```
 
-Training distribution:
+Can produce:
 
+```text
+Training:
 Class A: 80
 Class B: 80
 Class C: 80
 
-Testing distribution:
-
+Testing:
 Class A: 20
 Class B: 20
 Class C: 20
@@ -591,11 +453,11 @@ Class C: 20
 
 The operation:
 
-1. Groups row indices by class label.
-2. Shuffles indices within each class.
-3. Calculates the training partition size independently for each class.
-4. Ensures each class appears in both partitions.
-5. Shuffles the resulting training and testing indices.
+- Groups row indices by class label.
+- Shuffles indices within each class.
+- Calculates the training partition size independently for each class.
+- Ensures each class appears in both partitions.
+- Shuffles the resulting training and testing indices.
 
 Constraints:
 
@@ -608,13 +470,9 @@ Constraints:
 
 The random seed makes the operation reproducible.
 
----
+### 12. Dataset Export
 
-### 11. Dataset Export
-
-#### `to_file(path)`
-
-Exports the underlying DataFrame to a supported file format.
+Export a dataset to a supported file format:
 
 ```python
 dataset.to_file("output.csv")
@@ -635,11 +493,98 @@ Unsupported extensions raise `ValueError`.
 
 ---
 
-## Testing
+## Architecture
 
-Dasket uses pytest for automated testing and Ruff for formatting and linting.
+Dasket uses a small wrapper abstraction around Polars DataFrames.
 
-Run the complete test suite:
+```text
+             Application
+                  |
+                  v
+               Dasket
+                  |
+          +-------+-------+
+          |       |       |
+      Ingestion  Transformations  Profiling
+          |       |       |
+          +-------+-------+
+                  |
+                  v
+            Polars DataFrame
+                  |
+             +----+----+
+             |         |
+             v         v
+         Validation  Storage
+             |         |
+             v         v
+          Pydantic  PyArrow
+```
+
+### Technology Stack
+
+| Technology | Responsibility |
+|---|---|
+| Python 3.12+ | Core implementation |
+| Polars | DataFrame operations and transformations |
+| Pydantic | Schema validation |
+| PyArrow | Columnar data interoperability |
+| pytest | Automated testing |
+| Ruff | Formatting and linting |
+| uv | Dependency and environment management |
+
+Dasket deliberately delegates DataFrame execution and storage-format handling to established libraries.
+
+---
+
+## Design Scope
+
+Dasket is intended to provide practical dataset preparation and assessment primitives.
+
+It is not intended to replace:
+
+- Polars or Pandas as DataFrame engines.
+- Pydantic as a validation framework.
+- PyArrow as a columnar data interchange layer.
+- Dedicated machine learning frameworks.
+- Distributed data-processing engines.
+
+Instead, Dasket provides a consistent interface that combines common dataset preparation operations into one composable API.
+
+## Roadmap
+
+Potential future directions include:
+
+- Richer dataset profiling and statistical summaries.
+- Configurable missing-value strategies.
+- Dataset comparison and drift analysis.
+- Schema inference.
+- More advanced dataset sampling strategies.
+- Improved validation diagnostics.
+- Dataset lineage and transformation tracking.
+
+These are potential directions, not currently implemented features.
+
+---
+
+## Development
+
+Contributions, bug reports, and suggestions are welcome.
+
+Clone the repository:
+
+```bash
+git clone https://github.com/amargurung1013/dasket.git
+cd dasket
+```
+
+Install development dependencies:
+
+```bash
+uv sync
+```
+
+Run tests:
 
 ```bash
 uv run pytest -v
@@ -657,7 +602,7 @@ Format the codebase:
 uv run ruff format .
 ```
 
-Run the complete project checks:
+Run all project checks:
 
 ```bash
 make check
@@ -665,95 +610,28 @@ make check
 
 The `make check` target executes formatting, linting, and automated tests.
 
----
+Please ensure that formatting, linting, and tests pass before submitting changes.
 
 ## Project Structure
 
 ```text
 dasket/
-│
 ├── src/
 │   └── dasket/
 │       ├── __init__.py
 │       ├── dataset.py
 │       ├── reports.py
 │       └── validation.py
-│
 ├── tests/
-│   ├── test_dataset.py
-│   ├── test_validation.py
-│   ├── test_normalization.py
-│   ├── test_duplicates.py
-│   ├── test_missing_values.py
-│   ├── test_drop_missing.py
-│   ├── test_columns.py
-│   ├── test_filter.py
-│   ├── test_split.py
-│   └── test_stratified_split.py
-│
 ├── docs/
 │   └── assets/
 │       └── dasket.png
-│
 ├── Makefile
 ├── pyproject.toml
 ├── uv.lock
 └── README.md
 ```
 
----
-
-## Design Scope
-
-Dasket is intended to provide practical dataset preparation and assessment primitives.
-
-It is not intended to replace:
-
-- Polars or Pandas as dataframe engines.
-- Pydantic as a validation framework.
-- PyArrow as a columnar data interchange layer.
-- Dedicated machine learning frameworks.
-- Distributed data-processing engines.
-
-Instead, Dasket provides a consistent interface that combines common dataset preparation operations into one composable API.
-
----
-
-## Roadmap
-
-Potential future directions:
-
-- [ ] Richer dataset profiling and statistical summaries.
-- [ ] Configurable missing-value strategies.
-- [ ] Dataset comparison and drift analysis.
-- [ ] Schema inference.
-- [ ] More advanced dataset sampling strategies.
-- [ ] Improved validation diagnostics.
-- [ ] Dataset lineage and transformation tracking.
-
-These are potential directions, not currently implemented features.
-
----
-
-## Contributing
-
-Contributions, bug reports, and suggestions are welcome.
-
-For development:
-
-```bash
-git clone <repository-url>
-cd dasket
-
-uv sync
-
-make check
-```
-
-Please ensure that formatting, linting, and tests pass before submitting changes.
-
----
-
 ## License
 
-See the repository's license file for licensing information.
+Dasket is released under the MIT License. See [LICENSE](LICENSE) for details.
