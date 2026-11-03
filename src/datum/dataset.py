@@ -130,6 +130,25 @@ class Dataset:
             "duplicate_count": self._data.is_duplicated().sum(),
         }
 
+    def to_file(self, path: str | Path) -> None:
+        file_path = Path(path)
+        suffix = file_path.suffix.lower()
+
+        exporters = {
+            ".csv": self._data.write_csv,
+            ".json": self._data.write_json,
+            ".jsonl": self._data.write_ndjson,
+            ".parquet": self._data.write_parquet,
+        }
+
+        exporter = exporters.get(suffix)
+
+        if exporter is None:
+            raise ValueError(f"Unsupported file format: {suffix}")
+
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        exporter(file_path)
+
     @classmethod
     def from_dataframe(cls, dataframe: pl.DataFrame) -> "Dataset":
         return cls(dataframe)
