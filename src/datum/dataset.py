@@ -2,6 +2,7 @@ import math
 import random
 from collections import defaultdict
 from pathlib import Path
+from typing import Any
 
 import polars as pl
 from pydantic import BaseModel
@@ -102,6 +103,12 @@ class Dataset:
         if columns is None:
             columns = self._data.columns
 
+        if len(columns) != len(set(columns)):
+            raise ValueError("columns must not contain duplicates")
+
+        if not columns:
+            return Dataset(self._data.clone())
+
         missing_columns = set(columns) - set(self._data.columns)
 
         if missing_columns:
@@ -115,7 +122,7 @@ class Dataset:
     def from_file(cls, path: str | Path) -> "Dataset":
         file_path = Path(path)
 
-        if not file_path.exists():
+        if not file_path.is_file():
             raise FileNotFoundError(f"Dataset not found: {file_path}")
 
         suffix = file_path.suffix.lower()
@@ -134,7 +141,7 @@ class Dataset:
 
         return cls(loader(file_path))
 
-    def profile(self) -> dict:
+    def profile(self) -> dict[str, Any]:
         return {
             "row_count": self.row_count,
             "column_count": len(self.columns),
@@ -145,7 +152,7 @@ class Dataset:
                 }
                 for column in self.columns
             },
-            "duplicate_count": self._data.is_duplicated().sum(),
+            "duplicate_count": int(self._data.is_duplicated().sum()),
         }
 
     def to_file(self, path: str | Path) -> None:
@@ -164,10 +171,19 @@ class Dataset:
         if exporter is None:
             raise ValueError(f"Unsupported file format: {suffix}")
 
+        if file_path.exists() and file_path.is_dir():
+            raise IsADirectoryError(f"Expected a file path, got directory: {file_path}")
+
         file_path.parent.mkdir(parents=True, exist_ok=True)
         exporter(file_path)
 
     def select_columns(self, columns: list[str]) -> "Dataset":
+        if not columns:
+            raise ValueError("At least one column must be selected")
+
+        if len(columns) != len(set(columns)):
+            raise ValueError("columns must not contain duplicates")
+
         missing_columns = set(columns) - set(self._data.columns)
 
         if missing_columns:
@@ -176,10 +192,16 @@ class Dataset:
         return Dataset(self._data.select(columns))
 
     def drop_columns(self, columns: list[str]) -> "Dataset":
+        if len(columns) != len(set(columns)):
+            raise ValueError("columns must not contain duplicates")
+
         missing_columns = set(columns) - set(self._data.columns)
 
         if missing_columns:
             raise ValueError(f"Columns not found: {sorted(missing_columns)}")
+
+        if len(columns) >= len(self._data.columns):
+            raise ValueError("Cannot drop all columns from a dataset")
 
         return Dataset(self._data.drop(columns))
 
