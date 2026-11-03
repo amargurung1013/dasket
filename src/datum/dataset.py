@@ -29,6 +29,15 @@ class Dataset:
     ) -> "Dataset":
         lowercase = lowercase or []
 
+        if len(columns) != len(set(columns)):
+            raise ValueError("columns must not contain duplicates")
+
+        if len(lowercase) != len(set(lowercase)):
+            raise ValueError("lowercase must not contain duplicates")
+
+        if not columns:
+            return Dataset(self._data.clone())
+
         missing_columns = set(columns) - set(self._data.columns)
 
         if missing_columns:
@@ -55,9 +64,7 @@ class Dataset:
 
             expressions.append(expression.alias(column))
 
-        normalized_data = self._data.with_columns(expressions)
-
-        return Dataset(normalized_data)
+        return Dataset(self._data.with_columns(expressions))
 
     def find_duplicates(
         self,
@@ -66,13 +73,21 @@ class Dataset:
         if columns is None:
             columns = self._data.columns
 
+        if not columns:
+            raise ValueError("At least one column is required for duplicate detection")
+
         missing_columns = set(columns) - set(self._data.columns)
 
         if missing_columns:
             raise ValueError(f"Columns not found: {sorted(missing_columns)}")
 
+        if len(columns) != len(set(columns)):
+            raise ValueError("columns must not contain duplicates")
+
         return self._data.filter(pl.struct(columns).is_duplicated()).unique(
-            subset=columns, keep="first"
+            subset=columns,
+            keep="first",
+            maintain_order=True,
         )
 
     def missing_values(self) -> dict[str, int]:
@@ -173,6 +188,17 @@ class Dataset:
 
         if missing_columns:
             raise ValueError(f"Columns not found: {sorted(missing_columns)}")
+
+        if not mapping:
+            return Dataset(self._data.clone())
+
+        if any(not isinstance(name, str) or not name for name in mapping.values()):
+            raise ValueError("New column names must be non-empty strings")
+
+        resulting_names = [mapping.get(column, column) for column in self._data.columns]
+
+        if len(resulting_names) != len(set(resulting_names)):
+            raise ValueError("Renaming would create duplicate column names")
 
         return Dataset(self._data.rename(mapping))
 
