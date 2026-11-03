@@ -56,6 +56,22 @@ class Dataset:
 
         return Dataset(normalized_data)
 
+    def find_duplicates(
+        self,
+        columns: list[str] | None = None,
+    ) -> pl.DataFrame:
+        if columns is None:
+            columns = self._data.columns
+
+        missing_columns = set(columns) - set(self._data.columns)
+
+        if missing_columns:
+            raise ValueError(f"Columns not found: {sorted(missing_columns)}")
+
+        return self._data.filter(pl.struct(columns).is_duplicated()).unique(
+            subset=columns, keep="first"
+        )
+
     @classmethod
     def from_file(cls, path: str | Path) -> "Dataset":
         file_path = Path(path)
